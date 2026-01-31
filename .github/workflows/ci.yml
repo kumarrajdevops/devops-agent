@@ -21,6 +21,12 @@ jobs:
         run: |
           echo "devops-agent: CI smoke run"
 
+      - name: Intentional failure (devops-agent demo)
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          echo "Forcing a CI failure so devops-agent posts a PR comment."
+          exit 1
+
   devops-agent:
     name: devops-agent (PR comment)
     runs-on: ubuntu-latest
