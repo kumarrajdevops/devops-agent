@@ -21,6 +21,7 @@ This project starts by making CI/CD failures easier to understand and act on (by
 
 ## How it works (high level)
 - Collect read-only CI/CD run metadata and logs from supported providers.
+- See [docs/how-it-works.md](docs/how-it-works.md) for details; [docs/architecture.md](docs/architecture.md) for extension points.
 - Normalize events into a common observation model.
 - Generate summaries that explain what failed and likely why.
 - Output summaries in a simple CLI-first format.
@@ -33,7 +34,8 @@ Scope gate: **CI/CD observation only**. Docker and Kubernetes are explicitly out
 ## Roadmap (very short)
 - Phase 1: Establish open-source foundation (docs, contribution hygiene, skeleton).
 - Phase 2: Define CI/CD observation model and initial GitHub Actions observer.
-- Phase 3: Hardening and signal quality (failure categorization, PR comment UX, safety rails).
+- Phase 3A: Hardening and signal quality (failure categorization, PR comment UX, safety rails).
+- Phase 3C: Architecture and contributor readiness (docs, extension points, issue templates).
 
 ## Contributing
 See `CONTRIBUTING.md`.
