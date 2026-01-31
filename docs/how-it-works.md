@@ -1,6 +1,6 @@
-# How It Works
+# How it works
 
-## End-to-end flow (PR-triggered run)
+## End-to-end flow
 
 1. A pull request is opened, updated, or reopened.
 2. The CI workflow runs (see `.github/workflows/ci.yml`).

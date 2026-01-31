@@ -1,4 +1,4 @@
-# Vision (devops-agent)
+# Vision
 
 ## Core principle
 **Read-only first**: observe, analyze, explain.

@@ -1,4 +1,4 @@
-# Contributing to devops-agent
+# Contributing
 
 ## Principles (non-negotiable)
 - **Read-only first**: observation, analysis, explanation.

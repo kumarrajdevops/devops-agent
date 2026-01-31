@@ -15,7 +15,7 @@ Describe the feature or change you'd like.
 ## Constraints
 - Must remain read-only (no mutations except PR/issue comments)
 - No credential storage
-- Align with [docs/vision.md](../docs/vision.md)
+- Align with [vision principles](docs/vision.md)
 
 ## Alternatives considered
 Any other approaches you thought about.

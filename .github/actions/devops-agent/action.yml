@@ -1,0 +1,13 @@
+name: devops-agent
+description: Read-only CI observation — summarizes failures and posts a sticky PR comment
+runs:
+  using: composite
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Run devops-agent
+      run: python "${{ github.action_path }}/../../agent/gha_pr_comment.py"
+      shell: bash

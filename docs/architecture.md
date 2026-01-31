@@ -1,6 +1,6 @@
 # Architecture
 
-## High-level flow (textual)
+## High-level flow
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐

@@ -1,42 +1,87 @@
 # devops-agent
 
-## What problem does this solve?
-DevOps teams don’t have a single, explainable view of CI/CD health. Failures are scattered across logs and runs, and the signal-to-noise ratio is poor.
+Read-only CI observer for GitHub Actions. Summarizes workflow failures and posts a sticky PR comment — no deploys, no restarts, no credential storage.
 
-This project starts by making CI/CD failures easier to understand and act on (by humans), without introducing risk.
+## Why this exists
 
-## What this agent does
-- Observes CI/CD runs (starting with GitHub Actions).
-- Summarizes failures into clear, opinionated explanations.
-- Detects repeat patterns across runs (e.g., flaky tests, dependency failures).
-- Produces human-readable output via CLI and GitHub-native artifacts (issues/PR comments later).
+CI failure logs are noisy and fragmented. Teams waste time hunting through job outputs to find what failed and why. devops-agent observes your runs, classifies failures (lint, tests, build, deps, infra, timeout), and posts a single explainable summary to the PR. It never changes anything; it only observes and explains.
 
-## What this agent does NOT do
-- No deploys.
-- No restarts.
-- No scaling.
-- No mutations in Docker / Kubernetes / cloud resources.
-- No “auto-fix”.
-- No credentials stored by the agent.
+## What it does
 
-## How it works (high level)
-- Collect read-only CI/CD run metadata and logs from supported providers.
-- See [docs/how-it-works.md](docs/how-it-works.md) for details; [docs/architecture.md](docs/architecture.md) for extension points.
-- Normalize events into a common observation model.
-- Generate summaries that explain what failed and likely why.
-- Output summaries in a simple CLI-first format.
+- Observes GitHub Actions runs on pull requests
+- Summarizes failures with job links, failed step, and category
+- Suggests next steps based on failure type
+- Updates one sticky comment per PR (no spam)
 
-## Current status
-🚧 Status: Pre-Alpha (observation only)
+## What it does NOT do
 
-Scope gate: **CI/CD observation only**. Docker and Kubernetes are explicitly out of scope for now.
+- No deploys, restarts, scaling, or infrastructure changes
+- No auto-fix or remediation
+- No credential storage
 
-## Roadmap (very short)
-- Phase 1: Establish open-source foundation (docs, contribution hygiene, skeleton).
-- Phase 2: Define CI/CD observation model and initial GitHub Actions observer.
-- Phase 3A: Hardening and signal quality (failure categorization, PR comment UX, safety rails).
-- Phase 3C: Architecture and contributor readiness (docs, extension points, issue templates).
-- Phase 4A: Contributor operational readiness (unit tests, CI enforcement).
+## Quick start
+
+Add this job to your workflow (after your main jobs):
+
+```yaml
+  devops-agent:
+    runs-on: ubuntu-latest
+    needs: [your-job]
+    if: ${{ github.event_name == 'pull_request' && always() }}
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: kumarrajdevops/devops-agent@v0.1.0
+```
+
+[Full usage and config →](.github/actions/devops-agent/README.md)
+
+## Example output
+
+When CI fails, the agent posts a comment like:
+
+```markdown
+## devops-agent — CI observation (read-only)
+
+- **Workflow**: CI
+- **Run**: [link]
+- **Status**: `completed`
+- **Conclusion**: `failure`
+
+### Failures
+
+**[smoke](job-link)**
+- Failed step: Run tests
+- Category: `tests`
+- Next: Re-run the failing test locally; check recent changes and any snapshots/fixtures.
+
+_This agent is read-only: it does not deploy, restart, scale, or store credentials._
+```
+
+## Config (optional)
+
+Add `.devops-agent.yml` at repo root:
+
+```yaml
+github_actions:
+  pr_comment:
+    enabled: true
+    post_on: failure   # failure | always
+```
+
+## Docs
+
+- [How it works](docs/how-it-works.md)
+- [Architecture & extension points](docs/architecture.md)
+- [Vision & principles](docs/vision.md)
+
+## Status
+
+Pre-alpha. GitHub Actions only. Docker and Kubernetes out of scope.
 
 ## Contributing
-See `CONTRIBUTING.md`.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).

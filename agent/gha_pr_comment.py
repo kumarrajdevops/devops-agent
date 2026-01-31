@@ -1,6 +1,6 @@
 """
-devops-agent (Phase 2)
-Read-only CI/CD observer for GitHub Actions that posts a sticky PR comment.
+devops-agent — Read-only CI observer for GitHub Actions.
+Summarizes workflow failures and posts a sticky PR comment.
 
 Trust constraints:
 - No credential storage (uses GITHUB_TOKEN only)
