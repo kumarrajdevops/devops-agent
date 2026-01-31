@@ -139,7 +139,9 @@ def _build_comment(run: Dict[str, Any], jobs: List[Dict[str, Any]], findings: Li
     marker = "<!-- devops-agent:sticky -->"
     run_url = run.get("html_url") or ""
     workflow_name = run.get("name") or run.get("workflow_name") or "workflow"
-    conclusion = run.get("conclusion") or "unknown"
+    status = run.get("status") or "unknown"
+    # GitHub often returns conclusion=null while the run is still in progress.
+    conclusion = run.get("conclusion")
 
     failed_jobs = [j for j in jobs if j.get("conclusion") == "failure"]
     cancelled_jobs = [j for j in jobs if j.get("conclusion") == "cancelled"]
@@ -151,7 +153,11 @@ def _build_comment(run: Dict[str, Any], jobs: List[Dict[str, Any]], findings: Li
     lines.append(f"- **Workflow**: {workflow_name}")
     if run_url:
         lines.append(f"- **Run**: {run_url}")
-    lines.append(f"- **Conclusion**: `{conclusion}`")
+    lines.append(f"- **Status**: `{status}`")
+    if conclusion:
+        lines.append(f"- **Conclusion**: `{conclusion}`")
+    elif status in ("queued", "in_progress"):
+        lines.append("- **Conclusion**: `pending`")
     lines.append("")
 
     if not failed_jobs and not cancelled_jobs:
