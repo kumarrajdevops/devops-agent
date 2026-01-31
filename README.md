@@ -48,8 +48,7 @@ When CI fails, the agent posts a comment like:
 
 - **Workflow**: CI
 - **Run**: [link]
-- **Status**: `completed`
-- **Conclusion**: `failure`
+- **Run state**: Completed — Failed
 
 ### Failures
 

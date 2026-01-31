@@ -17,6 +17,7 @@ import sys
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -132,23 +133,57 @@ def _classify_failure(step_name: str = "", job_name: str = "") -> Tuple[str, str
         return ("build", "Check the first compilation error; verify toolchain versions and missing dependencies.")
     if any(x in hay for x in ["install", "dependency", "npm ci", "pip install"]):
         return ("dependencies", "Check dependency resolution/network errors; verify lockfiles and registry access.")
-    if any(x in hay for x in ["deploy", "terraform", "helm", "k8s", "kubernetes", "docker"]):
+    if any(x in hay for x in ["deploy", "terraform", "helm", "k8s", "kubernetes", "docker", "infra", "permission", "socket", "network"]):
         return ("infra", "Check infrastructure config and credentials; verify deploy target.")
     if any(x in hay for x in ["timeout", "cancelled", "cancelled_by_user"]):
         return ("timeout", "Increase job/step timeout or retry; check for flaky steps.")
     return ("unknown", "Open the failed job logs and start from the first error line.")
 
 
-def _build_comment(run: Dict[str, Any], jobs: List[Dict[str, Any]], findings: List[Dict[str, Any]]) -> str:
+def _format_run_state(run: Dict[str, Any]) -> str:
+    status = run.get("status") or "unknown"
+    conclusion = run.get("conclusion")
+    if status != "completed":
+        return "In progress (final result pending)"
+    c = (conclusion or "unknown").lower()
+    if c == "success":
+        return "Completed — Successful"
+    if c == "failure":
+        return "Completed — Failed"
+    if c == "cancelled":
+        return "Completed — Cancelled"
+    return "Completed"
+
+
+def _is_timeout_job(job: Dict[str, Any]) -> bool:
+    if job.get("conclusion") != "cancelled":
+        return False
+    steps = job.get("steps") or []
+    if any(s.get("conclusion") == "failure" for s in steps):
+        return False
+    started = job.get("started_at")
+    completed = job.get("completed_at")
+    if started and completed:
+        try:
+            s = datetime.fromisoformat(started.replace("Z", "+00:00"))
+            c = datetime.fromisoformat(completed.replace("Z", "+00:00"))
+            return (c - s).total_seconds() >= 45
+        except (ValueError, TypeError):
+            pass
+    return True
+
+
+def _build_comment(
+    run: Dict[str, Any],
+    jobs: List[Dict[str, Any]],
+    findings: List[Dict[str, Any]],
+    other_cancelled: Optional[List[Dict[str, Any]]] = None,
+) -> str:
     marker = "<!-- devops-agent:sticky -->"
     run_url = run.get("html_url") or ""
     workflow_name = run.get("name") or run.get("workflow_name") or "workflow"
-    status = run.get("status") or "unknown"
-    # GitHub often returns conclusion=null while the run is still in progress.
-    conclusion = run.get("conclusion")
-
-    failed_jobs = [j for j in jobs if j.get("conclusion") == "failure"]
-    cancelled_jobs = [j for j in jobs if j.get("conclusion") == "cancelled"]
+    run_state = _format_run_state(run)
+    other_cancelled = other_cancelled or []
 
     lines: List[str] = []
     lines.append(marker)
@@ -157,20 +192,14 @@ def _build_comment(run: Dict[str, Any], jobs: List[Dict[str, Any]], findings: Li
     lines.append(f"- **Workflow**: {workflow_name}")
     if run_url:
         lines.append(f"- **Run**: {run_url}")
-    lines.append(f"- **Status**: `{status}`")
-    if conclusion:
-        lines.append(f"- **Conclusion**: `{conclusion}`")
-    elif status in ("queued", "in_progress"):
-        lines.append("- **Conclusion**: `pending`")
-    elif status == "completed":
-        lines.append("- **Conclusion**: `—`")
+    lines.append(f"- **Run state**: {run_state}")
     lines.append("")
 
-    if not failed_jobs and not cancelled_jobs:
+    if not findings and not other_cancelled:
         lines.append("✅ No failed or cancelled jobs detected for this run.")
         return "\n".join(lines)
 
-    if failed_jobs:
+    if findings:
         lines.append("### Failures")
         for f in findings:
             jname = f.get("jobName") or ""
@@ -191,9 +220,9 @@ def _build_comment(run: Dict[str, Any], jobs: List[Dict[str, Any]], findings: Li
                 lines.append(f"- Next: {nxt}")
         lines.append("")
 
-    if cancelled_jobs:
+    if other_cancelled:
         lines.append("### Cancelled")
-        for j in cancelled_jobs:
+        for j in other_cancelled:
             name = j.get("name", "")
             url = j.get("html_url")
             if url:
@@ -290,6 +319,10 @@ def main() -> int:
         page += 1
 
     failed_jobs = [j for j in jobs if j.get("conclusion") == "failure"]
+    cancelled_jobs = [j for j in jobs if j.get("conclusion") == "cancelled"]
+    timeout_jobs = [j for j in cancelled_jobs if _is_timeout_job(j)]
+    other_cancelled = [j for j in cancelled_jobs if j not in timeout_jobs]
+
     findings: List[Dict[str, Any]] = []
     for j in failed_jobs:
         steps = j.get("steps") or []
@@ -307,16 +340,26 @@ def main() -> int:
                 "next": nxt,
             }
         )
+    for j in timeout_jobs:
+        findings.append(
+            {
+                "jobName": j.get("name", "") or "",
+                "jobUrl": j.get("html_url"),
+                "stepName": "(job timed out)",
+                "category": "timeout",
+                "next": "Investigate long-running steps or increase the job timeout.",
+            }
+        )
 
     post_on = config["github_actions"]["pr_comment"]["post_on"]
     should_post = post_on == "always" or (
-        post_on == "failure" and (bool(failed_jobs) or run.get("conclusion") == "failure")
+        post_on == "failure" and (bool(findings) or run.get("conclusion") == "failure")
     )
     if not should_post:
         print("Configured to post on failure only, and no failures detected; skipping.")
         return 0
 
-    body = _build_comment(run=run, jobs=jobs, findings=findings)
+    body = _build_comment(run=run, jobs=jobs, findings=findings, other_cancelled=other_cancelled)
 
     marker = "<!-- devops-agent:sticky -->"
     comments = gh.request("GET", f"/repos/{owner}/{repo}/issues/{pr_number}/comments?per_page=100")

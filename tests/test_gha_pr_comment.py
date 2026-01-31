@@ -9,6 +9,7 @@ import pytest
 from agent.gha_pr_comment import (
     _build_comment,
     _classify_failure,
+    _format_run_state,
     _get_config,
     _read_optional_config_yaml,
 )
@@ -44,6 +45,10 @@ class TestClassifyFailure:
     def test_unknown(self):
         cat, _ = _classify_failure("random", "other")
         assert cat == "unknown"
+
+    def test_infra_step_name(self):
+        cat, _ = _classify_failure("Infra step", "infra")
+        assert cat == "infra"
 
 
 class TestConfigParsing:
@@ -105,3 +110,15 @@ class TestBuildComment:
         assert "Run tests" in body
         assert "tests" in body
         assert "read-only" in body
+
+    def test_run_state_in_progress(self):
+        run = {"status": "in_progress"}
+        assert _format_run_state(run) == "In progress (final result pending)"
+
+    def test_run_state_completed_failed(self):
+        run = {"status": "completed", "conclusion": "failure"}
+        assert _format_run_state(run) == "Completed — Failed"
+
+    def test_run_state_completed_success(self):
+        run = {"status": "completed", "conclusion": "success"}
+        assert _format_run_state(run) == "Completed — Successful"
