@@ -1,0 +1,8 @@
+version: 1
+
+github_actions:
+  pr_comment:
+    enabled: true
+    mode: sticky
+    post_on: failure
+
