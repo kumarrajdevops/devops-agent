@@ -82,3 +82,6 @@ Notes:
 - Store nothing; emit no credentials.
 - Do not modify workflow outcomes; only observe and comment.
 
+## Reference implementation (Phase 2)
+- Python entrypoint: `agent/gha_pr_comment.py`
+
