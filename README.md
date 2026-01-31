@@ -36,6 +36,7 @@ Scope gate: **CI/CD observation only**. Docker and Kubernetes are explicitly out
 - Phase 2: Define CI/CD observation model and initial GitHub Actions observer.
 - Phase 3A: Hardening and signal quality (failure categorization, PR comment UX, safety rails).
 - Phase 3C: Architecture and contributor readiness (docs, extension points, issue templates).
+- Phase 4A: Contributor operational readiness (unit tests, CI enforcement).
 
 ## Contributing
 See `CONTRIBUTING.md`.

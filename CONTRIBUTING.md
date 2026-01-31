@@ -6,6 +6,12 @@
 - **Explainable output**: summaries must prioritize clarity over volume.
 - **No credential storage**: do not add mechanisms that store secrets/credentials.
 
+## Running tests
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
+
 ## Contribution workflow
 - Fork the repo and create a feature branch.
 - Open a PR against `main`.
