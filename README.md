@@ -33,6 +33,7 @@ Scope gate: **CI/CD observation only**. Docker and Kubernetes are explicitly out
 ## Roadmap (very short)
 - Phase 1: Establish open-source foundation (docs, contribution hygiene, skeleton).
 - Phase 2: Define CI/CD observation model and initial GitHub Actions observer.
+- Phase 3: Hardening and signal quality (failure categorization, PR comment UX, safety rails).
 
 ## Contributing
 See `CONTRIBUTING.md`.

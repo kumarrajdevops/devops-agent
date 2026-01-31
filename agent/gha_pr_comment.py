@@ -124,14 +124,18 @@ def _get_config(repo_root: Path) -> Dict[str, Any]:
 
 def _classify_failure(step_name: str = "", job_name: str = "") -> Tuple[str, str]:
     hay = f"{job_name}\n{step_name}".lower()
-    if any(x in hay for x in ["lint", "eslint", "flake8", "ruff"]):
+    if any(x in hay for x in ["lint", "eslint", "flake8", "ruff", "format"]):
         return ("lint", "Run the linter locally and fix the first reported violation.")
-    if any(x in hay for x in ["test", "pytest", "jest", "go test"]):
+    if any(x in hay for x in ["test", "pytest", "jest", "go test", "unittest"]):
         return ("tests", "Re-run the failing test locally; check recent changes and any snapshots/fixtures.")
-    if any(x in hay for x in ["build", "compile", "tsc"]):
+    if any(x in hay for x in ["build", "compile", "tsc", "make"]):
         return ("build", "Check the first compilation error; verify toolchain versions and missing dependencies.")
     if any(x in hay for x in ["install", "dependency", "npm ci", "pip install"]):
         return ("dependencies", "Check dependency resolution/network errors; verify lockfiles and registry access.")
+    if any(x in hay for x in ["deploy", "terraform", "helm", "k8s", "kubernetes", "docker"]):
+        return ("infra", "Check infrastructure config and credentials; verify deploy target.")
+    if any(x in hay for x in ["timeout", "cancelled", "cancelled_by_user"]):
+        return ("timeout", "Increase job/step timeout or retry; check for flaky steps.")
     return ("unknown", "Open the failed job logs and start from the first error line.")
 
 
@@ -158,6 +162,8 @@ def _build_comment(run: Dict[str, Any], jobs: List[Dict[str, Any]], findings: Li
         lines.append(f"- **Conclusion**: `{conclusion}`")
     elif status in ("queued", "in_progress"):
         lines.append("- **Conclusion**: `pending`")
+    elif status == "completed":
+        lines.append("- **Conclusion**: `—`")
     lines.append("")
 
     if not failed_jobs and not cancelled_jobs:
@@ -167,22 +173,22 @@ def _build_comment(run: Dict[str, Any], jobs: List[Dict[str, Any]], findings: Li
     if failed_jobs:
         lines.append("### Failures")
         for f in findings:
-            job_name = f.get("jobName", "")
-            job_url = f.get("jobUrl")
-            step_name = f.get("stepName")
-            category = f.get("category")
+            jname = f.get("jobName") or ""
+            jurl = f.get("jobUrl")
+            step = f.get("stepName")
+            cat = f.get("category")
             nxt = f.get("next")
-
-            if job_url:
-                lines.append(f"- **Job**: [{job_name}]({job_url})")
+            lines.append("")
+            if jurl:
+                lines.append(f"**[{jname}]({jurl})**")
             else:
-                lines.append(f"- **Job**: {job_name}")
-            if step_name:
-                lines.append(f"  - **First failed step**: {step_name}")
-            if category:
-                lines.append(f"  - **Category**: `{category}`")
+                lines.append(f"**{jname}**")
+            if step:
+                lines.append(f"- Failed step: {step}")
+            if cat:
+                lines.append(f"- Category: `{cat}`")
             if nxt:
-                lines.append(f"  - **Next step**: {nxt}")
+                lines.append(f"- Next: {nxt}")
         lines.append("")
 
     if cancelled_jobs:
@@ -224,7 +230,7 @@ class GitHubClient:
         )
 
         try:
-            with urllib.request.urlopen(req) as resp:
+            with urllib.request.urlopen(req, timeout=30) as resp:
                 raw = resp.read().decode("utf-8")
                 return json.loads(raw) if raw else None
         except urllib.error.HTTPError as e:
@@ -270,8 +276,18 @@ def main() -> int:
         raise RuntimeError("Missing GITHUB_RUN_ID")
 
     run = gh.request("GET", f"/repos/{owner}/{repo}/actions/runs/{run_id}")
-    jobs_resp = gh.request("GET", f"/repos/{owner}/{repo}/actions/runs/{run_id}/jobs?per_page=100")
-    jobs = jobs_resp.get("jobs", []) if isinstance(jobs_resp, dict) else []
+    jobs: List[Dict[str, Any]] = []
+    page = 1
+    while True:
+        jobs_resp = gh.request(
+            "GET",
+            f"/repos/{owner}/{repo}/actions/runs/{run_id}/jobs?per_page=100&page={page}",
+        )
+        page_jobs = jobs_resp.get("jobs", []) if isinstance(jobs_resp, dict) else []
+        jobs.extend(page_jobs)
+        if len(page_jobs) < 100:
+            break
+        page += 1
 
     failed_jobs = [j for j in jobs if j.get("conclusion") == "failure"]
     findings: List[Dict[str, Any]] = []
