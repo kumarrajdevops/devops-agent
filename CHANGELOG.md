@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.3] — 2025-01-31
+
+### Fixed
+
+- **GITHUB_TOKEN** — Add required `token` input; composite actions cannot access `secrets.GITHUB_TOKEN` directly. Pass `token: ${{ secrets.GITHUB_TOKEN }}` when using the action.
+
 ## [0.2.2] — 2025-01-31
 
 ### Fixed

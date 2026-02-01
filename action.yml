@@ -2,6 +2,11 @@ name: devops-agent
 description: Read-only DevOps observer that summarizes workflow failures and posts a sticky PR comment
 author: kumarrajdevops
 
+inputs:
+  token:
+    description: 'GITHUB_TOKEN for API access'
+    required: true
+
 runs:
   using: composite
   steps:
@@ -12,5 +17,7 @@ runs:
 
     - name: Run devops-agent
       shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
       run: |
         python "${{ github.action_path }}/agent/gha_pr_comment.py"
