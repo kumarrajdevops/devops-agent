@@ -55,10 +55,11 @@
 | POST comment | When no sticky comment exists | No |
 | PATCH comment | When sticky comment exists | No |
 
-## Sticky comment lifecycle
+## Sticky comment lifecycle (hybrid recovery)
 
-1. **First run**: No comment with marker → POST new comment.
-2. **Subsequent runs**: Marker found → PATCH existing comment with new body.
-3. **Marker**: `<!-- devops-agent:sticky -->` (hidden in rendered markdown).
+1. **Failure**: Create or update comment with failure summary. Marker: `state=failure`.
+2. **Recovery**: When a run succeeds and the comment is in failure state, update once to recovery. Marker: `state=recovered`.
+3. **Stable success**: If comment already shows recovery, do nothing.
+4. **Marker**: `<!-- devops-agent:sticky -->` plus `state=failure` or `state=recovered`.
 
-The marker ensures exactly one agent comment per PR; updates replace the previous summary.
+The comment is never deleted. Recovery preserves auditability.

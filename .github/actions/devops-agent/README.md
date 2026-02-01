@@ -28,6 +28,10 @@ Add this job to your workflow (runs after your main jobs):
 - `actions: read` — read workflow run and jobs
 - `pull-requests: write` — post/update PR comment
 
+## Recovery behavior
+
+On failure, the agent posts a sticky comment. When a later run succeeds, the same comment is updated once to show recovery. The comment is never deleted, so the audit trail is preserved.
+
 ## What it does NOT do
 
 - No deploys, restarts, scaling, or mutations

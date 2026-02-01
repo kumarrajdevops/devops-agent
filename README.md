@@ -44,11 +44,10 @@ Add this job to your workflow (after your main jobs):
 When CI fails, the agent posts a comment like:
 
 ```markdown
-## devops-agent — CI observation (read-only)
+## ❌ CI failures detected (Run #123)
 
 - **Workflow**: CI
 - **Run**: [link]
-- **Run state**: Completed — Failed
 
 ### Failures
 
@@ -59,6 +58,10 @@ When CI fails, the agent posts a comment like:
 
 _This agent is read-only: it does not deploy, restart, scale, or store credentials._
 ```
+
+## CI recovery behavior
+
+devops-agent posts a single sticky comment on CI failures. When a subsequent run succeeds, the same comment is updated once to indicate recovery. The comment is not deleted and is not repeatedly updated on every successful run. This preserves auditability and prevents confusion.
 
 ## Config (optional)
 

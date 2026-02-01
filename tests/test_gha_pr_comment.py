@@ -7,7 +7,8 @@ import pytest
 
 # Import internal functions for testing (pure, no side effects)
 from agent.gha_pr_comment import (
-    _build_comment,
+    _build_failure_comment,
+    _build_recovery_comment,
     _classify_failure,
     _format_run_state,
     _get_config,
@@ -83,18 +84,8 @@ class TestConfigParsing:
 class TestBuildComment:
     """PR comment rendering."""
 
-    def test_no_failures_success_message(self):
-        run = {"name": "CI", "status": "completed", "conclusion": "success"}
-        jobs = []
-        findings = []
-        body = _build_comment(run, jobs, findings)
-        assert "<!-- devops-agent:sticky -->" in body
-        assert "No failed or cancelled jobs" in body
-        assert "read-only" in body
-
-    def test_one_failure_has_failures_section(self):
-        run = {"name": "CI", "html_url": "https://example.com/run", "status": "completed", "conclusion": "failure"}
-        jobs = [{"name": "smoke", "conclusion": "failure", "html_url": "https://example.com/job"}]
+    def test_failure_comment_has_failures_section(self):
+        run = {"name": "CI", "html_url": "https://example.com/run", "run_number": 123}
         findings = [
             {
                 "jobName": "smoke",
@@ -104,12 +95,23 @@ class TestBuildComment:
                 "next": "Re-run locally.",
             }
         ]
-        body = _build_comment(run, jobs, findings)
+        body = _build_failure_comment(run, "123", findings, [])
+        assert "<!-- devops-agent:sticky -->" in body
+        assert "state=failure" in body
+        assert "CI failures detected (Run #123)" in body
         assert "### Failures" in body
         assert "smoke" in body
         assert "Run tests" in body
         assert "tests" in body
         assert "read-only" in body
+
+    def test_recovery_comment(self):
+        run = {"name": "CI", "html_url": "https://example.com/run", "run_number": 124}
+        body = _build_recovery_comment(run, "124")
+        assert "<!-- devops-agent:sticky -->" in body
+        assert "state=recovered" in body
+        assert "CI recovered — all checks passed (Run #124)" in body
+        assert "Previous CI failures have been resolved" in body
 
     def test_run_state_in_progress(self):
         run = {"status": "in_progress"}

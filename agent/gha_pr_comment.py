@@ -173,31 +173,36 @@ def _is_timeout_job(job: Dict[str, Any]) -> bool:
     return True
 
 
-def _build_comment(
+STICKY_MARKER = "<!-- devops-agent:sticky -->"
+STATE_FAILURE_MARKER = "<!-- devops-agent:state=failure -->"
+STATE_RECOVERED_MARKER = "<!-- devops-agent:state=recovered -->"
+
+
+def _run_number(run: Dict[str, Any], run_id: str) -> str:
+    n = run.get("run_number") or run.get("run_id") or run_id
+    return str(n)
+
+
+def _build_failure_comment(
     run: Dict[str, Any],
-    jobs: List[Dict[str, Any]],
+    run_id: str,
     findings: List[Dict[str, Any]],
-    other_cancelled: Optional[List[Dict[str, Any]]] = None,
+    other_cancelled: List[Dict[str, Any]],
 ) -> str:
-    marker = "<!-- devops-agent:sticky -->"
     run_url = run.get("html_url") or ""
     workflow_name = run.get("name") or run.get("workflow_name") or "workflow"
-    run_state = _format_run_state(run)
-    other_cancelled = other_cancelled or []
+    rn = _run_number(run, run_id)
 
     lines: List[str] = []
-    lines.append(marker)
-    lines.append("## devops-agent — CI observation (read-only)")
+    lines.append(STICKY_MARKER)
+    lines.append(STATE_FAILURE_MARKER)
+    lines.append("")
+    lines.append(f"## ❌ CI failures detected (Run #{rn})")
     lines.append("")
     lines.append(f"- **Workflow**: {workflow_name}")
     if run_url:
         lines.append(f"- **Run**: {run_url}")
-    lines.append(f"- **Run state**: {run_state}")
     lines.append("")
-
-    if not findings and not other_cancelled:
-        lines.append("✅ No failed or cancelled jobs detected for this run.")
-        return "\n".join(lines)
 
     if findings:
         lines.append("### Failures")
@@ -231,6 +236,27 @@ def _build_comment(
                 lines.append(f"- {name}")
         lines.append("")
 
+    lines.append("_This agent is read-only: it does not deploy, restart, scale, or store credentials._")
+    return "\n".join(lines)
+
+
+def _build_recovery_comment(run: Dict[str, Any], run_id: str) -> str:
+    run_url = run.get("html_url") or ""
+    workflow_name = run.get("name") or run.get("workflow_name") or "workflow"
+    rn = _run_number(run, run_id)
+
+    lines: List[str] = []
+    lines.append(STICKY_MARKER)
+    lines.append(STATE_RECOVERED_MARKER)
+    lines.append("")
+    lines.append(f"## ✅ CI recovered — all checks passed (Run #{rn})")
+    lines.append("")
+    lines.append(f"- **Workflow**: {workflow_name}")
+    if run_url:
+        lines.append(f"- **Recovery run**: {run_url}")
+    lines.append("")
+    lines.append("Previous CI failures have been resolved.")
+    lines.append("")
     lines.append("_This agent is read-only: it does not deploy, restart, scale, or store credentials._")
     return "\n".join(lines)
 
@@ -351,31 +377,38 @@ def main() -> int:
             }
         )
 
-    post_on = config["github_actions"]["pr_comment"]["post_on"]
-    should_post = post_on == "always" or (
-        post_on == "failure" and (bool(findings) or run.get("conclusion") == "failure")
-    )
-    if not should_post:
-        print("Configured to post on failure only, and no failures detected; skipping.")
-        return 0
-
-    body = _build_comment(run=run, jobs=jobs, findings=findings, other_cancelled=other_cancelled)
-
-    marker = "<!-- devops-agent:sticky -->"
     comments = gh.request("GET", f"/repos/{owner}/{repo}/issues/{pr_number}/comments?per_page=100")
     existing = None
     if isinstance(comments, list):
         for c in comments:
-            if isinstance(c, dict) and isinstance(c.get("body"), str) and marker in c["body"]:
+            if isinstance(c, dict) and isinstance(c.get("body"), str) and STICKY_MARKER in c["body"]:
                 existing = c
                 break
 
-    if existing and existing.get("id"):
+    if findings:
+        post_on = config["github_actions"]["pr_comment"]["post_on"]
+        should_post = post_on == "always" or (
+            post_on == "failure" and (bool(findings) or run.get("conclusion") == "failure")
+        )
+        if should_post:
+            body = _build_failure_comment(
+                run=run,
+                run_id=run_id,
+                findings=findings,
+                other_cancelled=other_cancelled,
+            )
+            if existing and existing.get("id"):
+                gh.request("PATCH", f"/repos/{owner}/{repo}/issues/comments/{existing['id']}", {"body": body})
+                print(f"Updated sticky PR comment: {existing['id']}")
+            else:
+                gh.request("POST", f"/repos/{owner}/{repo}/issues/{pr_number}/comments", {"body": body})
+                print("Created sticky PR comment.")
+        return 0
+
+    if existing and existing.get("id") and STATE_FAILURE_MARKER in (existing.get("body") or ""):
+        body = _build_recovery_comment(run=run, run_id=run_id)
         gh.request("PATCH", f"/repos/{owner}/{repo}/issues/comments/{existing['id']}", {"body": body})
-        print(f"Updated sticky PR comment: {existing['id']}")
-    else:
-        gh.request("POST", f"/repos/{owner}/{repo}/issues/{pr_number}/comments", {"body": body})
-        print("Created sticky PR comment.")
+        print("Updated sticky PR comment to recovery state.")
 
     return 0
 
