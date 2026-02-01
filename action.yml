@@ -12,7 +12,5 @@ runs:
 
     - name: Run devops-agent
       shell: bash
-      env:
-        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
       run: |
         python "${{ github.action_path }}/agent/gha_pr_comment.py"
