@@ -1,10 +1,14 @@
-name: devops-agent
+name: DevOps Agent
 description: Read-only DevOps observer that summarizes workflow failures and posts a sticky PR comment
 author: kumarrajdevops
 
+branding:
+  icon: alert-circle
+  color: red
+
 inputs:
   token:
-    description: 'GITHUB_TOKEN for API access'
+    description: "GITHUB_TOKEN for API access"
     required: true
 
 runs:
