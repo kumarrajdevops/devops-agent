@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.5] — 2025-01-31
+
+### Added
+
+- **Workflow examples** — New `docs/workflow-examples.md` with packaged action, from-source, and failure-lab examples.
+
 ## [0.2.3] — 2025-01-31
 
 ### Fixed

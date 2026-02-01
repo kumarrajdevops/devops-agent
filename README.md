@@ -34,10 +34,14 @@ Add this job to your workflow (after your main jobs):
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
-      - uses: kumarrajdevops/devops-agent@v0.2.3
+      - uses: kumarrajdevops/devops-agent@v0.2.5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+When using the packaged action (`uses:`), you must pass the token explicitly — composite actions do not inherit secrets automatically.
+
+**Note:** `actions/checkout` is not required for the packaged action, but may already exist in your workflow.
 
 ## Example output
 
@@ -97,15 +101,50 @@ github_actions:
     post_on: failure   # failure | always
 ```
 
-## Docs
+Config parser is intentionally minimal. Only simple scalars and nested maps are supported. Lists, anchors, and complex YAML features are ignored. Unknown keys are ignored safely.
 
-- [How it works](docs/how-it-works.md)
-- [Architecture & extension points](docs/architecture.md)
-- [Vision & principles](docs/vision.md)
+## Advanced usage (from source)
+
+Use this mode if you want to debug, extend, or contribute to devops-agent:
+
+```yaml
+- name: Checkout devops-agent
+  uses: actions/checkout@v4
+  with:
+    repository: kumarrajdevops/devops-agent
+    ref: main
+    path: devops-agent
+
+- name: Setup Python
+  uses: actions/setup-python@v5
+  with:
+    python-version: "3.11"
+
+- name: Run devops-agent from source
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  run: |
+    cd devops-agent
+    python agent/gha_pr_comment.py
+```
+
+Source usage follows `main` and may change at any time. For production use, prefer the packaged action.
+
+## Workflow examples
+
+- [Workflow examples](docs/workflow-examples.md) — packaged action, from source, and failure-lab
+
+## How it works
+
+- [How it works](docs/how-it-works.md) — end-to-end flow, env vars, API calls
+- [Architecture & extension points](docs/architecture.md) — component map, extension points
+- [Vision & principles](docs/vision.md) — read-only, ethical boundaries
 
 ## Status
 
 Pre-1.0. GitHub Actions only. Docker and Kubernetes out of scope.
+
+Packaged GitHub Action is the primary distribution. CLI and pip packaging are intentionally deferred.
 
 ## Changelog
 

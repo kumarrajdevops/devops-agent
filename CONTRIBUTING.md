@@ -7,10 +7,13 @@
 - **No credential storage**: do not add mechanisms that store secrets/credentials.
 
 ## Running tests
+
 ```bash
 pip install -r requirements-dev.txt
 pytest tests/ -v
 ```
+
+Tests focus on classification logic and comment rendering. End-to-end behavior is validated via GitHub Actions workflows.
 
 ## Contribution workflow
 - Fork the repo and create a feature branch.
@@ -25,6 +28,7 @@ Use short, descriptive, imperative commits. Examples:
 ## PRs that will be rejected
 - Adds “auto-fix”, remediation, or any mutation behavior.
 - Introduces secret storage or collection of private data without explicit design review.
+- Adds state persistence outside the PR comment (databases, files, caches).
 - Adds dashboards before CLI/GitHub-native outputs.
 - Adds broad architecture rewrites without an issue and proposal.
 
