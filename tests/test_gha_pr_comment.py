@@ -98,7 +98,7 @@ class TestBuildComment:
         body = _build_failure_comment(run, "123", findings, [])
         assert "<!-- devops-agent:sticky -->" in body
         assert "state=failure" in body
-        assert "CI failures detected (Run #123)" in body
+        assert "devops-agent — Failures detected (Run #123)" in body
         assert "### Failures" in body
         assert "smoke" in body
         assert "Run tests" in body
@@ -110,7 +110,7 @@ class TestBuildComment:
         body = _build_recovery_comment(run, "124")
         assert "<!-- devops-agent:sticky -->" in body
         assert "state=recovered" in body
-        assert "CI recovered — all checks passed (Run #124)" in body
+        assert "devops-agent — All checks passed (Run #124)" in body
         assert "Previous CI failures have been resolved" in body
 
     def test_run_state_in_progress(self):

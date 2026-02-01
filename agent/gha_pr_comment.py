@@ -198,7 +198,7 @@ def _build_failure_comment(
     lines.append(STICKY_MARKER)
     lines.append(STATE_FAILURE_MARKER)
     lines.append("")
-    lines.append(f"## ❌ CI failures detected (Run #{rn})")
+    lines.append(f"## ❌ devops-agent — Failures detected (Run #{rn})")
     lines.append("")
     lines.append(f"- **Workflow**: {workflow_name}")
     if run_url:
@@ -250,7 +250,7 @@ def _build_recovery_comment(run: Dict[str, Any], run_id: str) -> str:
     lines.append(STICKY_MARKER)
     lines.append(STATE_RECOVERED_MARKER)
     lines.append("")
-    lines.append(f"## ✅ CI recovered — all checks passed (Run #{rn})")
+    lines.append(f"## ✅ devops-agent — All checks passed (Run #{rn})")
     lines.append("")
     lines.append(f"- **Workflow**: {workflow_name}")
     if run_url:

@@ -44,7 +44,7 @@ Add this job to your workflow (after your main jobs):
 When CI fails, the agent posts a comment like:
 
 ```markdown
-## ❌ CI failures detected (Run #123)
+## ❌ devops-agent — Failures detected (Run #123)
 
 - **Workflow**: CI
 - **Run**: [link]
