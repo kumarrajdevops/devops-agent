@@ -1,0 +1,18 @@
+name: devops-agent
+description: Read-only DevOps observer that summarizes workflow failures and posts a sticky PR comment
+author: kumarrajdevops
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Run devops-agent
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+      run: |
+        python agent/gha_pr_comment.py

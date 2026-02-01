@@ -34,10 +34,8 @@ Add this job to your workflow (after your main jobs):
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
-      - uses: kumarrajdevops/devops-agent@v0.2.0
+      - uses: kumarrajdevops/devops-agent@v0.2.1
 ```
-
-[Full usage and config →](.github/actions/devops-agent/README.md)
 
 ## Example output
 

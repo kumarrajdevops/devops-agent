@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1] — 2025-01-31
+
+### Fixed
+
+- **Action packaging** — Add `action.yml` at repo root so `uses: kumarrajdevops/devops-agent@v0.2.1` works. Required for packaged action mode.
+
 ## [0.2.0] — 2025-01-31
 
 ### Added
