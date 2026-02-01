@@ -173,6 +173,7 @@ def _is_timeout_job(job: Dict[str, Any]) -> bool:
     return True
 
 
+# One permanent marker for lookup. Never change. Must appear in both failure and recovery.
 STICKY_MARKER = "<!-- devops-agent:sticky -->"
 STATE_FAILURE_MARKER = "<!-- devops-agent:state=failure -->"
 STATE_RECOVERED_MARKER = "<!-- devops-agent:state=recovered -->"
@@ -377,13 +378,22 @@ def main() -> int:
             }
         )
 
-    comments = gh.request("GET", f"/repos/{owner}/{repo}/issues/{pr_number}/comments?per_page=100")
     existing = None
-    if isinstance(comments, list):
+    page = 1
+    while True:
+        comments = gh.request(
+            "GET",
+            f"/repos/{owner}/{repo}/issues/{pr_number}/comments?per_page=100&page={page}",
+        )
+        if not isinstance(comments, list):
+            break
         for c in comments:
             if isinstance(c, dict) and isinstance(c.get("body"), str) and STICKY_MARKER in c["body"]:
                 existing = c
                 break
+        if existing or len(comments) < 100:
+            break
+        page += 1
 
     if findings:
         post_on = config["github_actions"]["pr_comment"]["post_on"]
