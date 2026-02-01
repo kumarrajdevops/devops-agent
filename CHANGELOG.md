@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.2] — 2025-01-31
+
+### Fixed
+
+- **Action path** — Run script from action repo using `github.action_path`; fixes "can't open file" when action runs in a different repo.
+
 ## [0.2.1] — 2025-01-31
 
 ### Fixed

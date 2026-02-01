@@ -15,4 +15,4 @@ runs:
       env:
         GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
       run: |
-        python agent/gha_pr_comment.py
+        python "${{ github.action_path }}/agent/gha_pr_comment.py"
