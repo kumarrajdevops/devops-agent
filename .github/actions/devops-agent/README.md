@@ -19,7 +19,7 @@ Add this job to your workflow (runs after your main jobs):
     steps:
       - uses: actions/checkout@v4
 
-      - uses: kumarrajdevops/devops-agent@v0.1.0
+      - uses: kumarrajdevops/devops-agent@v0.2.0
 ```
 
 ## Permissions required

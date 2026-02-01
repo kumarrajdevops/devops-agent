@@ -34,7 +34,7 @@ Add this job to your workflow (after your main jobs):
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
-      - uses: kumarrajdevops/devops-agent@v0.1.0
+      - uses: kumarrajdevops/devops-agent@v0.2.0
 ```
 
 [Full usage and config →](.github/actions/devops-agent/README.md)
@@ -59,9 +59,32 @@ When CI fails, the agent posts a comment like:
 _This agent is read-only: it does not deploy, restart, scale, or store credentials._
 ```
 
-## CI recovery behavior
+When a later run succeeds, the same comment is updated to:
 
-devops-agent posts a single sticky comment on CI failures. When a subsequent run succeeds, the same comment is updated once to indicate recovery. The comment is not deleted and is not repeatedly updated on every successful run. This preserves auditability and prevents confusion.
+```markdown
+## ✅ devops-agent — All checks passed (Run #124)
+
+- **Workflow**: CI
+- **Recovery run**: [link]
+
+Previous CI failures have been resolved.
+
+_This agent is read-only: it does not deploy, restart, scale, or store credentials._
+```
+
+## Comment behavior (auditable, single sticky)
+
+devops-agent maintains **one sticky comment per PR**. The comment is never deleted.
+
+| State | Header | When |
+|-------|--------|------|
+| Failure | `❌ devops-agent — Failures detected (Run #N)` | Run has failed jobs |
+| Recovery | `✅ devops-agent — All checks passed (Run #N)` | Run succeeds after a previous failure |
+| Stable | (no update) | Run succeeds and comment already shows recovery |
+
+- **Single comment** — The agent finds its comment by marker and updates it in place. No duplicate comments.
+- **Recovery transition** — When CI goes from failed to passing, the comment is updated once to show recovery. Subsequent successful runs do not trigger further updates.
+- **Audit trail** — Run numbers in headers let auditors trace failure and recovery. History is preserved.
 
 ## Config (optional)
 
@@ -82,7 +105,11 @@ github_actions:
 
 ## Status
 
-Pre-alpha. GitHub Actions only. Docker and Kubernetes out of scope.
+Pre-1.0. GitHub Actions only. Docker and Kubernetes out of scope.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
 
 ## Contributing
 
